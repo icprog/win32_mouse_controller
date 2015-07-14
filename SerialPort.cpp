@@ -6,19 +6,28 @@
 SerialPort::SerialPort() :	m_bSerialPortStatus(FALSE),
 							m_hSerialPortHandle(NULL)
 {
+	m_hEventRx			= INVALID_HANDLE_VALUE;
+	m_hThread			= INVALID_HANDLE_VALUE;
+	m_hThreadStarted	= INVALID_HANDLE_VALUE;
+	m_hThreadTerminator = INVALID_HANDLE_VALUE;
+	m_hSerialPortHandle = INVALID_HANDLE_VALUE;
+
 	m_SerialPortDCB.ByteSize = 8;
 	m_SerialPortDCB.BaudRate = CBR_115200;
 	m_SerialPortDCB.Parity	 = NOPARITY;
 	m_SerialPortDCB.StopBits = ONESTOPBIT;
+
+	initLock();
 }
 
 
 SerialPort::~SerialPort()
 {
 	m_hSerialPortHandle = NULL;
+	deleteLock();
 }
 
-BOOL SerialPort::open(DCB dcb, const char* name = "COM1")
+BOOL SerialPort::open(DCB dcb, char* name = "COM1")
 {
 	if (m_bSerialPortStatus == FALSE)		/**< Check if port closed. Dont try to open, if port already opened. */
 	{
@@ -28,8 +37,14 @@ BOOL SerialPort::open(DCB dcb, const char* name = "COM1")
 											0,
 											0,
 											OPEN_EXISTING,
-											0,
+											FILE_FLAG_OVERLAPPED,
 											NULL);
+		/// Try to set port event mask
+		if (SetCommMask(m_hSerialPortHandle, EV_RXCHAR | EV_TXEMPTY) == 0)
+		{
+			AfxMessageBox(_T("Unable to set port event mask")); //TODO: ??
+			return FALSE;
+		}
 		/// Try to get current port settings
 		if (GetCommState(m_hSerialPortHandle, &m_SerialPortDCB) == 0)
 		{
@@ -58,6 +73,16 @@ BOOL SerialPort::open(DCB dcb, const char* name = "COM1")
 		/// Set timeouts
 		SetCommTimeouts(m_hSerialPortHandle, &commTimeouts);
 
+		/// Create and start thread
+		m_hThreadTerminator = CreateEvent(0, 0, 0, 0);
+		m_hThreadStarted	= CreateEvent(0, 0, 0, 0);
+		m_hThread			= (HANDLE)_beginthreadex(0, 0, SerialPort::ThreadFn, (void*)this, 0, 0);
+		
+		/// Wait till thread started
+		WaitForSingleObject(m_hThreadStarted, INFINITE);
+		CloseHandle(m_hThreadStarted);
+		m_hThreadStarted = INVALID_HANDLE_VALUE;
+
 		/// Update port status
 		m_bSerialPortStatus = TRUE;
 		return TRUE;
@@ -69,6 +94,7 @@ BOOL SerialPort::close()
 {
 	if (m_bSerialPortStatus == TRUE)
 	{
+		SignalObjectAndWait(m_hThreadTerminator, m_hThread, INFINITE, FALSE); /**< Signal thread termination event */
 		m_bSerialPortStatus = FALSE;
 		if (CloseHandle(m_hSerialPortHandle) == 0) /**< Close the port */
 		{
@@ -129,4 +155,10 @@ HANDLE SerialPort::getPortHandle()
 BOOL SerialPort::getPortStatus()
 {
 	return m_bSerialPortStatus;
+}
+
+
+unsigned __stdcall SerialPort::ThreadFn(void* pvParam)
+{
+
 }

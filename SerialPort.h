@@ -15,7 +15,7 @@ public:
 	* @param name port name.
 	* @return Open attempt result
 	*/
-	BOOL open(DCB dcb, const char* name = "COM1"); 
+	BOOL open(DCB dcb, char* name = "COM1"); 
 
 	/**
 	* @brief Closes port
@@ -57,10 +57,23 @@ public:
 	BOOL getPortStatus();
 
 
+	inline void lock()		{ EnterCriticalSection(&m_csCriticalSection); }
+	inline void unlock()	{ LeaveCriticalSection(&m_csCriticalSection); }
+	inline void initLock()	{ InitializeCriticalSection((&m_csCriticalSection); }
+	inline void deleteLock(){ DeleteCriticalSection((&m_csCriticalSection); }
+
+	static unsigned __stdcall ThreadFn(void* pvParam);
+
 private:
 	HANDLE m_hSerialPortHandle; /**< Port handle */
 	BOOL   m_bSerialPortStatus; /**< Port Status */
 	DCB    m_SerialPortDCB;		/**< Port settings */
 
+	HANDLE m_hThread;			/**< Serial Port worker thread handle */
+	HANDLE m_hThreadTerminator; /**< Thread terminator event handle */
+	HANDLE m_hThreadStarted;	/**< Thread started event handle */
+	HANDLE m_hEventRx;			/**< Data received event handle */
+
+	CRITICAL_SECTION m_csCriticalSection;
 };
 
