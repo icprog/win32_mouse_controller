@@ -1,5 +1,7 @@
 #pragma once
-
+#include "stdafx.h"
+#include <cstdlib>
+#include <string>
 /**	Serial Port class. A wrapper of WinAPI serial port access functions.	
  *
  */
@@ -15,7 +17,7 @@ public:
 	* @param name port name.
 	* @return Open attempt result
 	*/
-	BOOL open(DCB dcb, char* name = "COM1"); 
+	BOOL open(DCB dcb, TCHAR* name);
 
 	/**
 	* @brief Closes port
@@ -28,10 +30,10 @@ public:
 	* @brief Reads data from port
 	* @param data a pointer to where put read data.
 	* @param sizeBuffer size of packet to read
-	* @param length
+	* @param timeout time to wait for data. In MODBUS, end of packet is signaled with silence on line
 	* @return Result of operation.
 	*/
-	BOOL read(char* data, const unsigned int& sizeBuffer, unsigned long& length);
+	BOOL read(char* data, unsigned int& size, unsigned long timeout);
 
 	/**
 	* @brief Writes data to port
@@ -40,7 +42,7 @@ public:
 	* @param length
 	* @return Result of operation.
 	*/
-	BOOL write(LPCVOID data, const unsigned int& sizeBuffer, unsigned long& length);
+	BOOL write(const char* data, DWORD dwSize);
 
 	/**
 	* @brief Gets port handle
@@ -57,10 +59,10 @@ public:
 	BOOL getPortStatus();
 
 
-	inline void lock()		{ EnterCriticalSection(&m_csCriticalSection); }
-	inline void unlock()	{ LeaveCriticalSection(&m_csCriticalSection); }
-	inline void initLock()	{ InitializeCriticalSection((&m_csCriticalSection); }
-	inline void deleteLock(){ DeleteCriticalSection((&m_csCriticalSection); }
+	inline void acquireLock()	{ EnterCriticalSection(&m_csCriticalSection); }
+	inline void unlock()		{ LeaveCriticalSection(&m_csCriticalSection); }
+	inline void initLock()		{ InitializeCriticalSection((&m_csCriticalSection)); }
+	inline void deleteLock()	{ DeleteCriticalSection((&m_csCriticalSection)); }
 
 	static unsigned __stdcall ThreadFn(void* pvParam);
 
@@ -73,6 +75,9 @@ private:
 	HANDLE m_hThreadTerminator; /**< Thread terminator event handle */
 	HANDLE m_hThreadStarted;	/**< Thread started event handle */
 	HANDLE m_hEventRx;			/**< Data received event handle */
+
+	std::string m_szFrameBuffer;
+
 
 	CRITICAL_SECTION m_csCriticalSection;
 };

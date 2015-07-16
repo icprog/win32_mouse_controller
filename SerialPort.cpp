@@ -1,5 +1,6 @@
+#include "afxwin.h"_
 #include "stdafx.h"
-#include "afxwin.h"
+#include "process.h"
 #include "SerialPort.h"
 
 
@@ -27,7 +28,7 @@ SerialPort::~SerialPort()
 	deleteLock();
 }
 
-BOOL SerialPort::open(DCB dcb, char* name = "COM1")
+BOOL SerialPort::open(DCB dcb, TCHAR* name)
 {
 	if (m_bSerialPortStatus == FALSE)		/**< Check if port closed. Dont try to open, if port already opened. */
 	{
@@ -42,13 +43,13 @@ BOOL SerialPort::open(DCB dcb, char* name = "COM1")
 		/// Try to set port event mask
 		if (SetCommMask(m_hSerialPortHandle, EV_RXCHAR | EV_TXEMPTY) == 0)
 		{
-			AfxMessageBox(_T("Unable to set port event mask")); //TODO: ??
+//			AfxMessageBox(_T("Unable to set port event mask")); //TODO: ??
 			return FALSE;
 		}
 		/// Try to get current port settings
 		if (GetCommState(m_hSerialPortHandle, &m_SerialPortDCB) == 0)
 		{
-			AfxMessageBox(_T("Unable to get port configuration.")); // TODO: ??
+//			AfxMessageBox(_T("Unable to get port configuration.")); // TODO: ??
 			return FALSE;
 		}
 		m_SerialPortDCB.BaudRate = dcb.BaudRate;
@@ -59,7 +60,7 @@ BOOL SerialPort::open(DCB dcb, char* name = "COM1")
 		/// Try to set demanded port settings.
 		if (SetCommState(m_hSerialPortHandle, &m_SerialPortDCB) == 0)
 		{
-			AfxMessageBox(_T("Unable to set port configuration.")); // TODO: ??
+//			AfxMessageBox(_T("Unable to set port configuration.")); // TODO: ??
 			return FALSE;
 		}
 
@@ -98,7 +99,7 @@ BOOL SerialPort::close()
 		m_bSerialPortStatus = FALSE;
 		if (CloseHandle(m_hSerialPortHandle) == 0) /**< Close the port */
 		{
-			AfxMessageBox(_T("Failed closing the port."));
+//			AfxMessageBox(_T("Failed closing the port."));
 			return FALSE;
 		}
 		else return TRUE;
@@ -106,44 +107,68 @@ BOOL SerialPort::close()
 	else return FALSE; /**< Port wasnt opened */
 }
 
-BOOL SerialPort::read(char* data, const unsigned int& sizeBuffer, unsigned long& length)
+BOOL SerialPort::read(char* data, unsigned int& size, unsigned long timeout)
 {
-	/// Try to read the port
-	if (ReadFile(m_hSerialPortHandle,
-		data,
-		sizeBuffer,
-		&length,
-		NULL) == 0)
+	/// Return false if atempting to read from disconnected port
+	if (getPortStatus() == false)
+		return false;
+	bool _bContinue = true;
+	while (_bContinue)
 	{
-		AfxMessageBox(_T("Failed reading the port."));
-		return FALSE;
+		DWORD dwWait = WaitForSingleObject(m_hEventRx, timeout);
+		switch (dwWait)
+		{
+			case WAIT_TIMEOUT:
+			{
+				_bContinue = false;
+			} break;
+			case WAIT_OBJECT_0:
+			{
+				///w sumie to nic do roboty tu.
+			} break;
+		}
 	}
-	/// If received some data, set end flag at the end of message.
-	if (length > 0)
+
+	size = m_szFrameBuffer.size();
+	if (size > 0)
 	{
-		data[length] = NULL;
-		return TRUE;
+		acquireLock();
+		m_szFrameBuffer.copy(data, m_szFrameBuffer.size(), 0);
+		m_szFrameBuffer.clear();
+		unlock();
 	}
-	return TRUE;
+	
+
 }
 
 
-BOOL SerialPort::write(LPCVOID data, const unsigned int& sizeBuffer, unsigned long& length)
+BOOL SerialPort::write(const char* data, DWORD dwSize)
 {
-	if (length > 0)
+	/// If not connected, don't bother trying.
+	if (m_bSerialPortStatus == false)
 	{
-		if (WriteFile(m_hSerialPortHandle,
-			data,
-			sizeBuffer,
-			&length,
-			NULL) == 0)
-		{
-			AfxMessageBox(_T("Failed to write to port."));
-			return FALSE;
-		}
-		else return TRUE;
+		return false;
 	}
-	else return FALSE;
+
+	OVERLAPPED ov;
+	memset(&ov, 0, sizeof(ov));
+	ov.hEvent = CreateEvent(0, true, 0, 0);
+	DWORD dwBytesWritten = 0;
+	
+	bool _bRet = WriteFile(m_hSerialPortHandle,
+		data,
+		dwSize,
+		&dwBytesWritten,
+		&ov);
+	/// WriteFile will return false if it returns asynchronously (this is our situation)
+	if (!_bRet)
+	{
+		/// So we wait for write to finish
+		WaitForSingleObject(ov.hEvent, INFINITE);
+	}
+
+	CloseHandle(ov.hEvent);
+	return true;
 }
 
 
@@ -160,5 +185,100 @@ BOOL SerialPort::getPortStatus()
 
 unsigned __stdcall SerialPort::ThreadFn(void* pvParam)
 {
+	SerialPort* _pThis = (SerialPort*)pvParam;
+	bool _bContinue = true;
+	DWORD dwEventMask = 0;
 
+	OVERLAPPED ov;
+	ov.hEvent = CreateEvent(0, true, 0, 0);
+	HANDLE _rHandles[2];
+	_rHandles[0] = _pThis->m_hThreadTerminator;
+
+	DWORD dwWait;
+	/// Notify that thread started
+	SetEvent(_pThis->m_hThreadStarted);
+
+	/// Thread loop
+	while (_bContinue)
+	{
+		bool _bRetval = WaitCommEvent(_pThis->m_hSerialPortHandle, &dwEventMask, &ov);
+		if (!_bRetval)
+		{
+			// TODO handle this.
+		}
+
+		_rHandles[1] = ov.hEvent;
+
+		/// dwWait will store index of event that just occured
+		dwWait = WaitForMultipleObjects(2, _rHandles, FALSE, INFINITE);
+
+		switch (dwWait)
+		{
+		case WAIT_OBJECT_0: /**< If thread terminator event occured, just end thread */
+			{
+				 _endthreadex(1);
+			} break;
+		case WAIT_OBJECT_0 + 1:
+			{
+				DWORD dwMask;
+				if (GetCommMask(_pThis->m_hSerialPortHandle, &dwMask))
+				{
+					if (dwMask == EV_TXEMPTY)
+					{
+						///Data send finished
+						// TODO: do stuff here
+						ResetEvent(ov.hEvent);
+						continue;
+					}
+
+				}
+
+				int iAccumulator = 0;
+				
+				///Enter critical section
+				_pThis->acquireLock();
+
+				bool _bRet = false;
+				DWORD dwBytesRead = 0;
+				OVERLAPPED ovRead;
+				memset(&ovRead, 0, sizeof(ovRead));
+				ovRead.hEvent = CreateEvent(0, true, 0, 0);
+
+				do
+				{
+					ResetEvent(ovRead.hEvent);
+					char szTmp[1];
+					int iSize = sizeof(szTmp);
+					memset(szTmp, 0, iSize);
+					_bRet = ReadFile(_pThis->m_hSerialPortHandle, szTmp, iSize, &dwBytesRead, &ovRead);
+					if (!_bRet)
+					{
+						_bContinue = false;
+						break;
+					}
+					if (dwBytesRead > 0)
+					{
+						_pThis->m_szFrameBuffer.append(szTmp);
+						iAccumulator += dwBytesRead;
+					}
+				} while (dwBytesRead > 0);
+				CloseHandle(ovRead.hEvent);
+
+				
+
+
+				///Exit critical section
+				_pThis->unlock();
+
+				if (iAccumulator > 0)
+				{
+					SetEvent(_pThis->m_hEventRx);
+				}
+				ResetEvent(ov.hEvent);
+			} break; 
+
+		}
+	}
+	return 0;
 }
+

@@ -1,6 +1,6 @@
 // MouseController.cpp : Defines the entry point for the application.
 //
-
+#include <Windows.h>
 #include "stdafx.h"
 #include "MouseController.h"
 
