@@ -24,19 +24,40 @@ bool Modbus::setSerialPort(SerialPort* sp)
 
 bool Modbus::addDevice(int iDeviceAddress)
 {
-	m_vectDeviceList.push_back(iDeviceAddress);
+	if (std::find(m_vectDeviceList.begin(), m_vectDeviceList.end(), iDeviceAddress) == m_vectDeviceList.end())
+	{
+		m_vectDeviceList.push_back(iDeviceAddress);
+		return true;
+	}
+	else return false;
 
 }
 
 bool Modbus::removeDevice(int iDeviceAddress)
 {
+	if (std::find(m_vectDeviceList.begin(), m_vectDeviceList.end(), iDeviceAddress) == m_vectDeviceList.end())
+		return false;
 	m_vectDeviceList.erase(std::remove(m_vectDeviceList.begin(), m_vectDeviceList.end(), iDeviceAddress), m_vectDeviceList.end());
+	return true;
 }
 
 bool Modbus::sendCommand(int iDeviceAddress, int iCommandCode, unsigned char* arguments, int iArgCount)
 {
+	unsigned char data[20];
+	data[0] = (char)iDeviceAddress;
+	data[1] = (char)iCommandCode;
+	memcpy(data + 2, arguments, iArgCount);
+
+	/// SerialPort::write is blocking function!
+	if (!(m_pSerialPort->write(data, 2 + iArgCount)))
+	{
+		return false;
+	}
 	//m_pSerialPort->write();
 
 	///We'll wait here to receive data. 
-	//	m_pSerialPort->read();
+	std::string rxData;
+	unsigned int size = 0;
+	m_pSerialPort->read(rxData,size,1000);
+	return true;
 }

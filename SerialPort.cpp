@@ -107,7 +107,7 @@ BOOL SerialPort::close()
 	else return FALSE; /**< Port wasnt opened */
 }
 
-BOOL SerialPort::read(char* data, unsigned int& size, unsigned long timeout)
+BOOL SerialPort::read(std::string& data, unsigned int& size, unsigned long timeout)
 {
 	/// Return false if atempting to read from disconnected port
 	if (getPortStatus() == false)
@@ -124,6 +124,7 @@ BOOL SerialPort::read(char* data, unsigned int& size, unsigned long timeout)
 			} break;
 			case WAIT_OBJECT_0:
 			{
+								  __nop();
 				///w sumie to nic do roboty tu.
 			} break;
 		}
@@ -133,7 +134,7 @@ BOOL SerialPort::read(char* data, unsigned int& size, unsigned long timeout)
 	if (size > 0)
 	{
 		acquireLock();
-		m_szFrameBuffer.copy(data, m_szFrameBuffer.size(), 0);
+		data = m_szFrameBuffer;
 		m_szFrameBuffer.clear();
 		unlock();
 	}
@@ -142,7 +143,7 @@ BOOL SerialPort::read(char* data, unsigned int& size, unsigned long timeout)
 }
 
 
-BOOL SerialPort::write(const char* data, DWORD dwSize)
+BOOL SerialPort::write(const unsigned char* data, DWORD dwSize)
 {
 	/// If not connected, don't bother trying.
 	if (m_bSerialPortStatus == false)
@@ -217,6 +218,7 @@ unsigned __stdcall SerialPort::ThreadFn(void* pvParam)
 		case WAIT_OBJECT_0: /**< If thread terminator event occured, just end thread */
 			{
 				 _endthreadex(1);
+				 _bContinue = false;
 			} break;
 		case WAIT_OBJECT_0 + 1:
 			{
@@ -247,18 +249,17 @@ unsigned __stdcall SerialPort::ThreadFn(void* pvParam)
 				do
 				{
 					ResetEvent(ovRead.hEvent);
-					char szTmp[1];
+					unsigned char szTmp = 0;
 					int iSize = sizeof(szTmp);
-					memset(szTmp, 0, iSize);
-					_bRet = ReadFile(_pThis->m_hSerialPortHandle, szTmp, iSize, &dwBytesRead, &ovRead);
+					_bRet = ReadFile(_pThis->m_hSerialPortHandle, &szTmp, iSize, &dwBytesRead, &ovRead);
 					if (!_bRet)
 					{
-						_bContinue = false;
+						
 						break;
 					}
 					if (dwBytesRead > 0)
 					{
-						_pThis->m_szFrameBuffer.append(szTmp);
+						_pThis->m_szFrameBuffer.push_back(szTmp);
 						iAccumulator += dwBytesRead;
 					}
 				} while (dwBytesRead > 0);

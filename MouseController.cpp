@@ -3,6 +3,8 @@
 #include <Windows.h>
 #include "stdafx.h"
 #include "MouseController.h"
+#include "Modbus.h"
+#include "SerialPort.h"
 
 #define MAX_LOADSTRING 100
 
@@ -10,10 +12,17 @@
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
+HWND g_hWnd;									// main window handle
+HWND g_hSendButton;								// send button control
+HWND g_hConsoleText;							// console view
+
+Modbus g_cModbus;				/**< Modbus communicator object*/
+SerialPort g_cSerialPort;		/**< Serial Port object*/
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
+BOOL				InitHardware(void);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
@@ -39,6 +48,18 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	{
 		return FALSE;
 	}
+	// Perform HW initialization:
+	if (!InitHardware())
+	{
+		return FALSE;
+	}
+
+
+
+
+
+	
+
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MOUSECONTROLLER));
 
@@ -95,24 +116,74 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-   HWND hWnd;
+   
 
    hInst = hInstance; // Store instance handle in our global variable
 
-   hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+   g_hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
 
-   if (!hWnd)
+   if (!g_hWnd)
+   {
+      return FALSE;
+   }
+   /// Create Send Button
+   g_hSendButton = CreateWindowEx(WS_EX_CLIENTEDGE, _T("BUTTON"),
+									_T("Send"), WS_CHILD | WS_VISIBLE | WS_BORDER, 
+									10, 10, 70, 50, g_hWnd, (HMENU) IDM_SENDBUTTON, hInst, NULL);
+   if (!g_hSendButton)
+   {
+	   return FALSE;
+   }
+   /// Create Console Text View
+   g_hConsoleText = CreateWindowEx(WS_EX_CLIENTEDGE, _T("EDIT"),
+									NULL, WS_CHILD | WS_VISIBLE | WS_BORDER, 
+									90, 10, 300, 200, g_hWnd, NULL, hInst, NULL);   
+   if (!g_hConsoleText)
    {
       return FALSE;
    }
 
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
+   /// Window successfully built, now show it
+   ShowWindow(g_hWnd, nCmdShow);
+   UpdateWindow(g_hWnd);
 
    return TRUE;
 }
 
+
+BOOL InitHardware(void)
+{
+	/// Fill DCB structure with settings
+	DCB dcb;
+	memset(&dcb, 0, sizeof(dcb));
+
+	dcb.BaudRate = CBR_115200;
+	dcb.ByteSize = 8;
+	dcb.Parity = NOPARITY;
+	dcb.StopBits = ONESTOPBIT;
+
+	/// Open port and check if failed
+	BOOL retval = g_cSerialPort.open(dcb, _T("COM3"));
+	if (!retval)
+	{
+		return FALSE;
+	}
+
+	/// Assign serial port to Modbus class.
+	retval = g_cModbus.setSerialPort(&g_cSerialPort);
+	if (!retval)
+	{
+		return FALSE;
+	}
+	///TODO: debug code
+	///
+	g_cModbus.addDevice(1);
+	unsigned char argList[1] = {0x1};
+	g_cModbus.sendCommand(1, 66, argList, 1);
+
+
+}
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -142,6 +213,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
+			break;
+		case IDM_SENDBUTTON:
+
 			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);

@@ -33,7 +33,7 @@ public:
 	* @param timeout time to wait for data. In MODBUS, end of packet is signaled with silence on line
 	* @return Result of operation.
 	*/
-	BOOL read(char* data, unsigned int& size, unsigned long timeout);
+	BOOL read(std::string&  data, unsigned int& size, unsigned long timeout);
 
 	/**
 	* @brief Writes data to port
@@ -42,7 +42,7 @@ public:
 	* @param length
 	* @return Result of operation.
 	*/
-	BOOL write(const char* data, DWORD dwSize);
+	BOOL write(const unsigned char* data, DWORD dwSize);
 
 	/**
 	* @brief Gets port handle
