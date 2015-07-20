@@ -59,24 +59,53 @@ public:
 	BOOL getPortStatus();
 
 
+	/**
+	* @brief Acquires Lock protecting receive buffer.
+	* @param None.
+	* @return None.
+	*/
 	inline void acquireLock()	{ EnterCriticalSection(&m_csCriticalSection); }
+
+	/**
+	* @brief Releases Lock protecting receive buffer.
+	* @param None.
+	* @return None.
+	*/
 	inline void unlock()		{ LeaveCriticalSection(&m_csCriticalSection); }
+
+	/**
+	* @brief Inits Lock protecting receive buffer.
+	* @param None.
+	* @return None.
+	*/
 	inline void initLock()		{ InitializeCriticalSection((&m_csCriticalSection)); }
+
+	/**
+	* @brief Deletes Lock protecting receive buffer.
+	* @param None.
+	* @return None.
+	*/
 	inline void deleteLock()	{ DeleteCriticalSection((&m_csCriticalSection)); }
 
+	/**
+	* @brief Serial Port Thread function.
+	* @details Contains thread's loop.
+	* @param None.
+	* @return None.
+	*/
 	static unsigned __stdcall ThreadFn(void* pvParam);
 
 private:
-	HANDLE m_hSerialPortHandle; /**< Port handle */
-	BOOL   m_bSerialPortStatus; /**< Port Status */
-	DCB    m_SerialPortDCB;		/**< Port settings */
+	HANDLE m_hSerialPortHandle; /*< Port handle */
+	BOOL   m_bSerialPortStatus; /*< Port Status */
+	DCB    m_SerialPortDCB;		/*< Port settings */
 
-	HANDLE m_hThread;			/**< Serial Port worker thread handle */
-	HANDLE m_hThreadTerminator; /**< Thread terminator event handle */
-	HANDLE m_hThreadStarted;	/**< Thread started event handle */
-	HANDLE m_hEventRx;			/**< Data received event handle */
+	HANDLE m_hThread;			/*< Serial Port worker thread handle */
+	HANDLE m_hThreadTerminator; /*< Thread terminator event handle */
+	HANDLE m_hThreadStarted;	/*< Thread started event handle */
+	HANDLE m_hEventRx;			/*< Data received event handle */
 
-	std::string m_szFrameBuffer;
+	std::string m_szFrameBuffer;/*< Receive buffer */
 
 
 	CRITICAL_SECTION m_csCriticalSection;

@@ -53,7 +53,6 @@ bool Modbus::sendCommand(int iDeviceAddress, int iCommandCode, unsigned char* ar
 	{
 		return false;
 	}
-	//m_pSerialPort->write();
 
 	///We'll wait here to receive data. 
 	std::string rxData;
