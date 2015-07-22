@@ -2,7 +2,7 @@
 #include "stdafx.h"
 #include <cstdlib>
 #include <string>
-/**	Serial Port class. A wrapper of WinAPI serial port access functions.	
+/**	@brief Serial Port class. A wrapper of WinAPI serial port access functions.	
  *
  */
 class SerialPort

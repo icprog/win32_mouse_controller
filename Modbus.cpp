@@ -41,7 +41,7 @@ bool Modbus::removeDevice(int iDeviceAddress)
 	return true;
 }
 
-bool Modbus::sendCommand(int iDeviceAddress, int iCommandCode, unsigned char* arguments, int iArgCount)
+bool Modbus::sendCommand(int iDeviceAddress, int iCommandCode, unsigned char* arguments, int iArgCount, std::string &response, unsigned int &response_size)
 {
 	unsigned char data[20];
 	data[0] = (char)iDeviceAddress;
@@ -53,10 +53,17 @@ bool Modbus::sendCommand(int iDeviceAddress, int iCommandCode, unsigned char* ar
 	{
 		return false;
 	}
-
+	
 	///We'll wait here to receive data. 
 	std::string rxData;
 	unsigned int size = 0;
-	m_pSerialPort->read(rxData,size,1000);
+	m_pSerialPort->read(rxData,size,100);
+	if (size == 0)
+		return false;
+
+	rxData.erase(0, 1);
+	response = rxData;
+	size -= 2;
+	response_size = size;
 	return true;
 }

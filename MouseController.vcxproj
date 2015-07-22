@@ -81,6 +81,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Controller.h" />
     <ClInclude Include="Modbus.h" />
     <ClInclude Include="MouseController.h" />
     <ClInclude Include="Resource.h" />
@@ -89,6 +90,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Controller.cpp" />
     <ClCompile Include="Modbus.cpp" />
     <ClCompile Include="MouseController.cpp" />
     <ClCompile Include="SerialPort.cpp" />

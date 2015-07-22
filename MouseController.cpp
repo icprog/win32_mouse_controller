@@ -5,6 +5,7 @@
 #include "MouseController.h"
 #include "Modbus.h"
 #include "SerialPort.h"
+#include "Controller.h"
 
 #define MAX_LOADSTRING 100
 
@@ -16,8 +17,9 @@ HWND g_hWnd;									// main window handle
 HWND g_hSendButton;								// send button control
 HWND g_hConsoleText;							// console view
 
-Modbus g_cModbus;				/**< Modbus communicator object*/
-SerialPort g_cSerialPort;		/**< Serial Port object*/
+Modbus g_cModbus;				/*< Modbus communicator object*/
+SerialPort g_cSerialPort;		/*< Serial Port object */
+
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -37,6 +39,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
  	// TODO: Place code here.
 	MSG msg;
 	HACCEL hAccelTable;
+	Controller cController(0x1, &g_cModbus);		/*< Controller object */
+	cController.setSerialPort(&g_cSerialPort);
 
 	// Initialize global strings
 	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -54,11 +58,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-
-
-
-
-	
+	cController.start();
 
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MOUSECONTROLLER));
@@ -163,6 +163,9 @@ BOOL InitHardware(void)
 	dcb.Parity = NOPARITY;
 	dcb.StopBits = ONESTOPBIT;
 
+
+
+
 	/// Open port and check if failed
 	BOOL retval = g_cSerialPort.open(dcb, _T("COM3"));
 	if (!retval)
@@ -170,17 +173,22 @@ BOOL InitHardware(void)
 		return FALSE;
 	}
 
+	/*
+	unsigned char data[] = { 0x1, 0x42, 0x1 };
+	g_cSerialPort.write(data, 3);
+	while (1);
+	std::string ret;
+	unsigned int siz;
+	g_cSerialPort.read(ret, siz, 1000); */
+
+
 	/// Assign serial port to Modbus class.
 	retval = g_cModbus.setSerialPort(&g_cSerialPort);
 	if (!retval)
 	{
 		return FALSE;
 	}
-	///TODO: debug code
-	///
-	g_cModbus.addDevice(1);
-	unsigned char argList[1] = {0x1};
-	g_cModbus.sendCommand(1, 66, argList, 1);
+
 
 
 }

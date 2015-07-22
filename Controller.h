@@ -9,7 +9,7 @@ class Controller
 {
 public:
 
-	Controller();
+	Controller(int deviceAddress, Modbus* modbusInstance);
 	~Controller();
 
 	/**
@@ -18,6 +18,18 @@ public:
 	* @return True if all correct. False, if pointed SerialPort isn't opened.
 	*/
 	bool setSerialPort(SerialPort*  sp);
+
+	/**
+	* @brief Starts Controller thread
+	* @return True if start succeeded
+	*/
+	bool start();
+
+	/**
+	* @brief Ends Controller thread
+	* @return True if termination succeeded
+	*/
+	bool terminate();
 
 	/**
 	* @brief Controller Thread function.
@@ -33,9 +45,13 @@ public:
 		*/
 	
 private:
-	SerialPort* m_cSerialPort;	/*< Pointer to SerialPort object used to communicate with device*/
-	Modbus*		m_cModbus;		/*< Modbus object*/
+	SerialPort* m_cSerialPort;		/*< Pointer to SerialPort object used to communicate with device */
+	Modbus*		m_cModbus;			/*< Modbus object to wrap serial port communication */
+	int			m_iDeviceAddress;	/*< Modbus address of device */
 
+	HANDLE		m_hThread;				/*< Thread handle */
+	HANDLE		m_hThreadTerminator;	/*< Thread terminator event handle */
+	HANDLE		m_hThreadStart;			/*< Thread start event handle */
 
 };
 

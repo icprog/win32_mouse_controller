@@ -3,12 +3,18 @@
 #include <vector>
 #include <algorithm>
 
+
+
 /**	@brief Modbus class. Used to perform MODBUS-like communication via serial port.
 *
 */
 class Modbus
 {
 public:
+	enum modbus_commands_enum{
+		COMMAND_READ_32BIT = 66,
+		COMMAND_READ_8BIT
+	};
 	/**
 	* @brief Class constructor */
 	Modbus();
@@ -45,9 +51,11 @@ public:
 	* @param iCommandCode - MODBUS command code
 	* @arguments - arguments of command.
 	* @iArgCount - number of arguments(number of argument bytes)
+	* @response - device response
+	* @response_size - device response size
 	* @return True if all correct. False, well, I don't know when.
 	*/
-	bool sendCommand(int iDeviceAddress, int iCommandCode, unsigned char* arguments, int iArgCount);
+	bool sendCommand(int iDeviceAddress, int iCommandCode, unsigned char* arguments, int iArgCount, std::string &response, unsigned int &response_size);
 	
 private:
 	std::vector<int> m_vectDeviceList;	/*< Device list*/
