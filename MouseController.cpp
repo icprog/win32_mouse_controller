@@ -176,7 +176,6 @@ BOOL InitHardware(void)
 	/*
 	unsigned char data[] = { 0x1, 0x42, 0x1 };
 	g_cSerialPort.write(data, 3);
-	while (1);
 	std::string ret;
 	unsigned int siz;
 	g_cSerialPort.read(ret, siz, 1000); */

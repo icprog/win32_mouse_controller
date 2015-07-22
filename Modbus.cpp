@@ -61,7 +61,7 @@ bool Modbus::sendCommand(int iDeviceAddress, int iCommandCode, unsigned char* ar
 	if (size == 0)
 		return false;
 
-	rxData.erase(0, 1);
+	rxData.erase(0, 2);
 	response = rxData;
 	size -= 2;
 	response_size = size;

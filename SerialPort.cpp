@@ -155,7 +155,7 @@ BOOL SerialPort::write(const unsigned char* data, DWORD dwSize)
 	memset(&ov, 0, sizeof(ov));
 	ov.hEvent = CreateEvent(0, true, 0, 0);
 	DWORD dwBytesWritten = 0;
-	
+	acquireLock();
 	bool _bRet = WriteFile(m_hSerialPortHandle,
 		data,
 		dwSize,
@@ -167,7 +167,9 @@ BOOL SerialPort::write(const unsigned char* data, DWORD dwSize)
 		/// So we wait for write to finish
 		WaitForSingleObject(ov.hEvent, INFINITE);
 	}
-
+	
+	Sleep(1);
+	unlock();
 	CloseHandle(ov.hEvent);
 	return true;
 }
@@ -249,17 +251,18 @@ unsigned __stdcall SerialPort::ThreadFn(void* pvParam)
 				do
 				{
 					ResetEvent(ovRead.hEvent);
-					unsigned char szTmp = 0;
-					int iSize = sizeof(szTmp);
-					_bRet = ReadFile(_pThis->m_hSerialPortHandle, &szTmp, iSize, &dwBytesRead, &ovRead);
+					char szTmp[10];
+					int iSize = 1;
+					_bRet = ReadFile(_pThis->m_hSerialPortHandle, szTmp, iSize, &dwBytesRead, &ovRead);
 					if (!_bRet)
 					{
 						
 						break;
 					}
+			
 					if (dwBytesRead > 0)
 					{
-						_pThis->m_szFrameBuffer.push_back(szTmp);
+						_pThis->m_szFrameBuffer.append(szTmp, dwBytesRead);
 						iAccumulator += dwBytesRead;
 					}
 				} while (dwBytesRead > 0);
