@@ -63,7 +63,8 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 	DWORD dwWaitResult = 0;
 	unsigned char argument[1] = { 0 };
 	float acceleration[3] = { 0.00 };
-
+	float ang_rate[3] = { 0.00 };
+	float magn_field[3] = { 0.00 };
 	/// Notify that thread started successfully
 	SetEvent(_pThis->m_hThreadStart);
 
@@ -79,25 +80,95 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 			_bLoopThread = false;
 			break;
 		}
+
+		/// Get accelerometer data
 		memset(acceleration, 0, sizeof(acceleration));
 		for (int i = 0; i < 3; i++)
 		{
+			//Sleep(100);
 			std::string response;
 			unsigned int responseSize =0 ;
 			argument[0] = i;
-			_pThis->m_cModbus->sendCommand(_pThis->m_iDeviceAddress,
-				Modbus::COMMAND_READ_32BIT,
-				argument, 1, response,
-				responseSize);
-			if (responseSize != 0)
+			/// Query device until it answers
+			bool data_acquired = false;
+			while (!data_acquired)
 			{
-				char bytes[4];
-				std::copy(response.begin(), response.end(), bytes);
-				memcpy(acceleration + i, bytes, sizeof(bytes));
+				_pThis->m_cModbus->sendCommand(_pThis->m_iDeviceAddress,
+												Modbus::COMMAND_READ_32BIT,
+												argument, 1, response,
+												responseSize);
+				if (responseSize == 4)
+				{
+					char bytes[4];
+					std::copy(response.begin(), response.end(), bytes);
+					memcpy(acceleration + i, bytes, sizeof(bytes));
+					data_acquired = true;
+				}
 			}
 		}
 
+		/// Get gyro data
+		memset(ang_rate, 0, sizeof(ang_rate));
+		for (int i = 0; i < 3; i++)
+		{
+			//Sleep(100);
+			std::string response;
+			unsigned int responseSize = 0;
+			argument[0] = i+3;
+			/// Query device until it answers
+			bool data_acquired = false;
+			while (!data_acquired)
+			{
+				_pThis->m_cModbus->sendCommand(_pThis->m_iDeviceAddress,
+					Modbus::COMMAND_READ_32BIT,
+					argument, 1, response,
+					responseSize);
+				if (responseSize == 4)
+				{
+					char bytes[4];
+					std::copy(response.begin(), response.end(), bytes);
+					memcpy(ang_rate + i, bytes, sizeof(bytes));
+					data_acquired = true;
+				}
+			}
+		}
+
+		/// Get gyro data
+		memset(magn_field, 0, sizeof(magn_field));
+		for (int i = 0; i < 3; i++)
+		{
+			//Sleep(100);
+			std::string response;
+			unsigned int responseSize = 0;
+			argument[0] = i + 6;
+			/// Query device until it answers
+			bool data_acquired = false;
+			while (!data_acquired)
+			{
+				_pThis->m_cModbus->sendCommand(_pThis->m_iDeviceAddress,
+					Modbus::COMMAND_READ_32BIT,
+					argument, 1, response,
+					responseSize);
+				if (responseSize == 4)
+				{
+					char bytes[4];
+					std::copy(response.begin(), response.end(), bytes);
+					memcpy(magn_field + i, bytes, sizeof(bytes));
+					data_acquired = true;
+				}
+			}
+		}
+
+		/// Process data
+		float result[3];
+		_pThis->processData(acceleration, ang_rate, magn_field, result);
+		Sleep(500);
 	} /*< End of thread loop*/
 
 	return 0;
+}
+
+bool Controller::processData(float* acc, float* angRate, float* magnField, float* result)
+{
+	return false;
 }

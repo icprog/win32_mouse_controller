@@ -53,5 +53,16 @@ private:
 	HANDLE		m_hThreadTerminator;	/*< Thread terminator event handle */
 	HANDLE		m_hThreadStart;			/*< Thread start event handle */
 
+	/**
+	* @brief Does all data processing
+	* @details Computes desired values from input data. 
+	* @param[in] acc - acceleration vector
+	* @param[in] angRate - angular rate vector
+	* @param[in] magnField - magnetic field vector
+	* @param[out] result - result of computation
+	* @return Not implemented.
+	*/
+	bool processData(float* acc, float* angRate, float* magnField, float* result);
+	
 };
 

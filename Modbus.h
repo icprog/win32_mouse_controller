@@ -53,7 +53,7 @@ public:
 	* @iArgCount - number of arguments(number of argument bytes)
 	* @response - device response
 	* @response_size - device response size
-	* @return True if all correct. False, well, I don't know when.
+	* @return True if all correct. False when device didn't answer
 	*/
 	bool sendCommand(int iDeviceAddress, int iCommandCode, unsigned char* arguments, int iArgCount, std::string &response, unsigned int &response_size);
 	
