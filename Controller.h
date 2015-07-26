@@ -3,7 +3,7 @@
 #include "Modbus.h"
 
 /// Callback function type definition
-typedef BOOL(_stdcall *callback)(const std::string& data);
+typedef BOOL(_stdcall *gui_callback)(const std::string& data);
 
 class Controller
 {

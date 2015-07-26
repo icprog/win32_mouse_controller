@@ -14,6 +14,7 @@
 #define IDI_SMALL				108
 #define IDC_MOUSECONTROLLER			109
 #define IDM_SENDBUTTON			(501)
+#define IDM_STOPBUTTON			(502)
 #define IDC_MYICON				2
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1

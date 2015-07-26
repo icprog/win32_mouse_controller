@@ -10,12 +10,21 @@
 #define MAX_LOADSTRING 100
 
 // Global Variables:
-HINSTANCE hInst;								// current instance
-TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
-TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
-HWND g_hWnd;									// main window handle
-HWND g_hSendButton;								// send button control
-HWND g_hConsoleText;							// console view
+HINSTANCE hInst;								/*< Current instance */
+TCHAR szTitle[MAX_LOADSTRING];					/*< The title bar text */
+TCHAR szWindowClass[MAX_LOADSTRING];			/*< The main window class name */
+
+HWND g_hWnd;									/*< Main window handle */
+HWND g_hSendButton;								/*< START button handle */
+HWND g_hStopButton;								/*< STOP button handle */
+HWND g_hSetButton;								/*< SET button handle */
+HWND g_hMouseFactorEdit;						/*< Mouse factor edit handle */
+HWND g_hSamplingTimeEdit;						/*< Sampling time edit handle */
+HWND g_hConsoleText;							/*< console view handle */
+HWND g_hVector1Label;
+HWND g_hVector2Label;
+HWND g_hVector3Label;
+HWND g_hVectorDisplayEdit;
 
 Modbus g_cModbus;				/*< Modbus communicator object*/
 SerialPort g_cSerialPort;		/*< Serial Port object */
@@ -127,22 +136,85 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    {
       return FALSE;
    }
-   /// Create Send Button
+   /// Create Start Button
    g_hSendButton = CreateWindowEx(WS_EX_CLIENTEDGE, _T("BUTTON"),
-									_T("Send"), WS_CHILD | WS_VISIBLE | WS_BORDER, 
+									_T("Start"), WS_CHILD | WS_VISIBLE | WS_BORDER, 
 									10, 10, 70, 50, g_hWnd, (HMENU) IDM_SENDBUTTON, hInst, NULL);
    if (!g_hSendButton)
    {
 	   return FALSE;
    }
+
+   /// Create Stop Button
+   g_hStopButton = CreateWindowEx(WS_EX_CLIENTEDGE, _T("BUTTON"),
+	   _T("Stop"), WS_CHILD | WS_VISIBLE | WS_BORDER,
+	   80, 10, 70, 50, g_hWnd, (HMENU)IDM_STOPBUTTON, hInst, NULL);
+   if (!g_hStopButton)
+   {
+	   return FALSE;
+   }
+
+   /// Create Mouse Threshold Edit
+   g_hMouseFactorEdit = CreateWindowEx(WS_EX_CLIENTEDGE, _T("EDIT"),
+	   NULL, WS_CHILD | WS_VISIBLE | WS_BORDER,
+	   130, 130, 70, 20, g_hWnd, NULL, hInst, NULL);
+   if (!g_hMouseFactorEdit)
+   {
+	   return FALSE;
+   }
+
+   /// Create Mouse Threshold Edit
+   g_hSamplingTimeEdit = CreateWindowEx(WS_EX_CLIENTEDGE, _T("EDIT"),
+	   NULL, WS_CHILD | WS_VISIBLE | WS_BORDER,
+	   130, 160, 70, 20, g_hWnd, NULL, hInst, NULL);
+   if (!g_hSamplingTimeEdit)
+   {
+	   return FALSE;
+   }
+
    /// Create Console Text View
    g_hConsoleText = CreateWindowEx(WS_EX_CLIENTEDGE, _T("EDIT"),
 									NULL, WS_CHILD | WS_VISIBLE | WS_BORDER, 
-									90, 10, 300, 200, g_hWnd, NULL, hInst, NULL);   
+									10, 240, 300, 200, g_hWnd, NULL, hInst, NULL);   
    if (!g_hConsoleText)
    {
       return FALSE;
    }
+
+   /// Create Result Vector text edit
+   g_hVectorDisplayEdit = CreateWindowEx(WS_EX_CLIENTEDGE, _T("EDIT"),
+	   NULL, WS_CHILD | WS_VISIBLE | WS_BORDER,
+	   130, 210, 120, 20, g_hWnd, NULL, hInst, NULL);
+   if (!g_hVectorDisplayEdit)
+   {
+	   return FALSE;
+   }
+
+   /// Create labels
+   HWND _hLabelMouseThresh = CreateWindowEx(NULL, _T("STATIC"),
+	   _T("Mouse factor"), WS_CHILD | WS_VISIBLE,
+	   10, 130, 120, 20, g_hWnd, NULL, hInst, NULL);
+   if (!_hLabelMouseThresh)
+   {
+	   return FALSE;
+   }
+
+   HWND _hLabelSampleTime = CreateWindowEx(NULL, _T("STATIC"),
+	   _T("Sampling time"), WS_CHILD | WS_VISIBLE,
+	   10, 160, 120, 20, g_hWnd, NULL, hInst, NULL);
+   if (!_hLabelSampleTime)
+   {
+	   return FALSE;
+   }
+
+   HWND _hLabelVector = CreateWindowEx(NULL, _T("STATIC"),
+	   _T("Result vector"), WS_CHILD | WS_VISIBLE,
+	   10, 210, 120, 20, g_hWnd, NULL, hInst, NULL);
+   if (!_hLabelVector)
+   {
+	   return FALSE;
+   }
+
 
    /// Window successfully built, now show it
    ShowWindow(g_hWnd, nCmdShow);
@@ -163,23 +235,12 @@ BOOL InitHardware(void)
 	dcb.Parity = NOPARITY;
 	dcb.StopBits = ONESTOPBIT;
 
-
-
-
 	/// Open port and check if failed
 	BOOL retval = g_cSerialPort.open(dcb, _T("COM3"));
 	if (!retval)
 	{
 		return FALSE;
 	}
-
-	/*
-	unsigned char data[] = { 0x1, 0x42, 0x1 };
-	g_cSerialPort.write(data, 3);
-	std::string ret;
-	unsigned int siz;
-	g_cSerialPort.read(ret, siz, 1000); */
-
 
 	/// Assign serial port to Modbus class.
 	retval = g_cModbus.setSerialPort(&g_cSerialPort);
@@ -188,9 +249,9 @@ BOOL InitHardware(void)
 		return FALSE;
 	}
 
-
-
+	return TRUE;
 }
+
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -260,4 +321,16 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	}
 	return (INT_PTR)FALSE;
+}
+
+
+gui_callback updateVector(const std::string& data)
+{
+
+
+}
+
+gui_callback updateConsole(const std::string& data)
+{
+
 }
