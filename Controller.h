@@ -3,7 +3,7 @@
 #include "Modbus.h"
 
 /// Callback function type definition
-typedef BOOL(_stdcall *gui_callback)(const std::string& data);
+typedef bool (*gui_callback)(const std::string& data);
 
 class Controller
 {
@@ -32,6 +32,22 @@ public:
 	bool terminate();
 
 	/**
+	* @brief Sets GUI callback
+	* @details Callback function is called to update GUI values
+	* @param Pointer to callback.
+	* @return None.
+	*/
+	void setGuiCallback(gui_callback cb);
+
+	/**
+	* @brief Sets console trace callback
+	* @details Callback function is called to update GUI values
+	* @param Pointer to callback.
+	* @return None.
+	*/
+	void setTraceCallback(gui_callback cb);
+
+	/**
 	* @brief Controller Thread function.
 	* @details Contains thread's loop.
 	* @param None.
@@ -53,6 +69,9 @@ private:
 	HANDLE		m_hThreadTerminator;	/*< Thread terminator event handle */
 	HANDLE		m_hThreadStart;			/*< Thread start event handle */
 
+	gui_callback m_pfGuiCallback;		/*< Pointer to GUI callback function */
+	gui_callback m_pfTraceCallback;		/*< Pointer to GUI console trace callback */
+
 	/**
 	* @brief Does all data processing
 	* @details Computes desired values from input data. 
@@ -63,6 +82,16 @@ private:
 	* @return Not implemented.
 	*/
 	bool processData(float* acc, float* angRate, float* magnField, float* result);
+
+	/**
+	* @brief Formats float array to string with desired precision
+	* @details Wraps some lines of code
+	* @param[in] data - data vector
+	* @param[in] dataSize - vector size
+	* @param[in] precision - float precision
+	* @return Formatted string
+	*/
+	static std::string formatString(float* data, size_t dataSize, size_t precision);
 	
 };
 

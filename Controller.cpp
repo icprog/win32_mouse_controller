@@ -1,14 +1,18 @@
 #include "stdafx.h"
 #include "process.h"
 #include "Controller.h"
-
+#include <string>
+#include <sstream>
+#include <iomanip>
 
 Controller::Controller(int deviceAddress, Modbus* modbusInstance) : 
 											m_hThreadStart(INVALID_HANDLE_VALUE), 
 											m_hThreadTerminator(INVALID_HANDLE_VALUE),
 											m_hThread(INVALID_HANDLE_VALUE),
 											m_iDeviceAddress(deviceAddress),
-											m_cModbus(modbusInstance)
+											m_cModbus(modbusInstance),
+											m_pfGuiCallback(NULL),
+											m_pfTraceCallback(NULL)
 {
 }
 
@@ -54,6 +58,16 @@ bool Controller::terminate()
 	CloseHandle(m_hThreadTerminator);
 	m_hThreadTerminator = INVALID_HANDLE_VALUE;
 	return true;
+}
+
+void Controller::setTraceCallback(gui_callback cb)
+{
+	m_pfTraceCallback = cb;
+}
+
+void Controller::setGuiCallback(gui_callback cb)
+{
+	m_pfGuiCallback = cb;
 }
 
 unsigned __stdcall Controller::ThreadFn(void* pvParam)
@@ -162,7 +176,11 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 		/// Process data
 		float result[3];
 		_pThis->processData(acceleration, ang_rate, magn_field, result);
-		Sleep(500);
+		std::string resultString = formatString(result, 3, 3);
+		_pThis->m_pfGuiCallback(resultString);
+		static int ziomek = 0;
+		ziomek++;
+		//Sleep(200);
 	} /*< End of thread loop*/
 
 	return 0;
@@ -170,5 +188,18 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 
 bool Controller::processData(float* acc, float* angRate, float* magnField, float* result)
 {
+	/// @TODO 
+	memcpy(result, magnField, 3 * sizeof(float));
 	return false;
+}
+
+std::string Controller::formatString(float* data, size_t dataSize, size_t precision)
+{
+	std::stringstream ss;
+	for (int i = 0; i < dataSize; i++)
+	{
+		ss << std::fixed << std::setprecision(precision) << data[i] << " ";
+	}
+	return ss.str();
+	
 }

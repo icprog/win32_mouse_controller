@@ -36,6 +36,8 @@ BOOL				InitInstance(HINSTANCE, int);
 BOOL				InitHardware(void);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
+bool updateVector(const std::string& data);
+bool  updateConsole(const std::string& data);
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -67,6 +69,10 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
+	/// Setup GUI callbacks
+	cController.setGuiCallback(updateVector);
+	cController.setTraceCallback(updateConsole);
+	/// Start controller thread
 	cController.start();
 
 
@@ -82,6 +88,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		}
 	}
 
+	cController.terminate();
+	g_cSerialPort.close();
 	return (int) msg.wParam;
 }
 
@@ -184,7 +192,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    /// Create Result Vector text edit
    g_hVectorDisplayEdit = CreateWindowEx(WS_EX_CLIENTEDGE, _T("EDIT"),
 	   NULL, WS_CHILD | WS_VISIBLE | WS_BORDER,
-	   130, 210, 120, 20, g_hWnd, NULL, hInst, NULL);
+	   130, 210, 200, 20, g_hWnd, NULL, hInst, NULL);
    if (!g_hVectorDisplayEdit)
    {
 	   return FALSE;
@@ -324,13 +332,29 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 
-gui_callback updateVector(const std::string& data)
+bool updateVector(const std::string& data)
 {
+	/// Do some job with converting from std::string to LPWSTR
+	int bufferlen = MultiByteToWideChar(CP_ACP, 0, data.c_str(), data.size(), NULL, 0);
+	if (bufferlen == 0)
+		return false;
 
+	LPWSTR widestr = new WCHAR[bufferlen + 1];
 
+	MultiByteToWideChar(CP_ACP, 0, data.c_str(), data.size(), widestr, bufferlen);
+
+	/// Ensure wide string is null terminated
+	widestr[bufferlen] = 0;
+
+	/// Set control text
+	SetWindowText(g_hVectorDisplayEdit, widestr);
+
+	delete[] widestr;
+	
+	return true;
 }
 
-gui_callback updateConsole(const std::string& data)
+bool  updateConsole(const std::string& data)
 {
-
+	return true;
 }
