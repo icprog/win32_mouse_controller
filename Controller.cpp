@@ -4,6 +4,8 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <fstream>
+#include <iostream>
 
 Controller::Controller(int deviceAddress, Modbus* modbusInstance) : 
 											m_hThreadStart(INVALID_HANDLE_VALUE), 
@@ -29,6 +31,7 @@ bool Controller::setSerialPort(SerialPort*  sp)
 
 bool Controller::start()
 {
+
 	m_hThreadStart		= CreateEvent(0, 0, 0, 0);
 	m_hThreadTerminator = CreateEvent(0, 0, 0, 0);
 	
@@ -57,6 +60,7 @@ bool Controller::terminate()
 	}
 	CloseHandle(m_hThreadTerminator);
 	m_hThreadTerminator = INVALID_HANDLE_VALUE;
+	m_hThread = INVALID_HANDLE_VALUE;
 	return true;
 }
 
@@ -120,9 +124,9 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 				}
 			}
 		}
-
-		/// Get gyro data
-		memset(ang_rate, 0, sizeof(ang_rate));
+		/*
+		/// Get magn data
+		memset(magn_field, 0, sizeof(magn_field));
 		for (int i = 0; i < 3; i++)
 		{
 			//Sleep(100);
@@ -141,14 +145,14 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 				{
 					char bytes[4];
 					std::copy(response.begin(), response.end(), bytes);
-					memcpy(ang_rate + i, bytes, sizeof(bytes));
+					memcpy(magn_field + i, bytes, sizeof(bytes));
 					data_acquired = true;
 				}
 			}
-		}
+		}*/
 
 		/// Get gyro data
-		memset(magn_field, 0, sizeof(magn_field));
+		memset(ang_rate, 0, sizeof(ang_rate));
 		for (int i = 0; i < 3; i++)
 		{
 			//Sleep(100);
@@ -167,19 +171,31 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 				{
 					char bytes[4];
 					std::copy(response.begin(), response.end(), bytes);
-					memcpy(magn_field + i, bytes, sizeof(bytes));
+					memcpy(ang_rate + i, bytes, sizeof(bytes));
 					data_acquired = true;
 				}
 			}
 		}
-
+		
 		/// Process data
+		/*
+		std::ofstream dataFile;
+		dataFile.open("data.dat", std::ofstream::app);
+		dataFile << formatString(acceleration, 3, 4) << formatString(ang_rate, 3, 4) << std::endl;
+		dataFile.close();
+		*/
 		float result[3];
 		_pThis->processData(acceleration, ang_rate, magn_field, result);
 		std::string resultString = formatString(result, 3, 3);
 		_pThis->m_pfGuiCallback(resultString);
-		static int ziomek = 0;
-		ziomek++;
+		INPUT input;
+		ZeroMemory(&input, sizeof(input));
+		input.type = INPUT_MOUSE;
+		input.mi.dx = result[0]*100;
+		input.mi.dy = result[1]*100;
+		input.mi.dwFlags = MOUSEEVENTF_MOVE;
+		UINT retval = SendInput(1, &input, sizeof(input));
+
 		//Sleep(200);
 	} /*< End of thread loop*/
 
@@ -189,7 +205,13 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 bool Controller::processData(float* acc, float* angRate, float* magnField, float* result)
 {
 	/// @TODO 
-	memcpy(result, magnField, 3 * sizeof(float));
+	//memcpy(result, magnField, 3 * sizeof(float));
+
+	float theta = -1 * atan2(acc[1], acc[2]);
+	float psi = -1 * atan2(acc[0], acc[2]);
+	result[0] = theta;
+	result[1] = psi;
+	result[2] = 0;
 	return false;
 }
 

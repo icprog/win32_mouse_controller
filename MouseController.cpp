@@ -28,7 +28,7 @@ HWND g_hVectorDisplayEdit;
 
 Modbus g_cModbus;				/*< Modbus communicator object*/
 SerialPort g_cSerialPort;		/*< Serial Port object */
-
+Controller* g_cController;		/*< Controller object */
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -50,8 +50,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
  	// TODO: Place code here.
 	MSG msg;
 	HACCEL hAccelTable;
-	Controller cController(0x1, &g_cModbus);		/*< Controller object */
-	cController.setSerialPort(&g_cSerialPort);
+	//Controller cController(0x1, &g_cModbus);		/*< Controller object */
+	
 
 	// Initialize global strings
 	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -68,12 +68,13 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	{
 		return FALSE;
 	}
-
+	g_cController = new Controller(1, &g_cModbus);
+	g_cController->setSerialPort(&g_cSerialPort);
 	/// Setup GUI callbacks
-	cController.setGuiCallback(updateVector);
-	cController.setTraceCallback(updateConsole);
+	g_cController->setGuiCallback(updateVector);
+	g_cController->setTraceCallback(updateConsole);
 	/// Start controller thread
-	cController.start();
+	g_cController->start();
 
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MOUSECONTROLLER));
@@ -88,7 +89,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		}
 	}
 
-	cController.terminate();
+	g_cController->terminate();
 	g_cSerialPort.close();
 	return (int) msg.wParam;
 }
@@ -147,7 +148,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    /// Create Start Button
    g_hSendButton = CreateWindowEx(WS_EX_CLIENTEDGE, _T("BUTTON"),
 									_T("Start"), WS_CHILD | WS_VISIBLE | WS_BORDER, 
-									10, 10, 70, 50, g_hWnd, (HMENU) IDM_SENDBUTTON, hInst, NULL);
+									10, 10, 70, 50, g_hWnd, (HMENU) IDM_STARTBUTTON, hInst, NULL);
    if (!g_hSendButton)
    {
 	   return FALSE;
@@ -290,9 +291,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
 			break;
-		case IDM_SENDBUTTON:
-
+		case IDM_STARTBUTTON:
+			g_cController->start();
+			EnableWindow(g_hSendButton, false);
 			break;
+		case IDM_STOPBUTTON:
+			g_cController->terminate();
+			EnableWindow(g_hSendButton, true);
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
@@ -347,6 +352,7 @@ bool updateVector(const std::string& data)
 	widestr[bufferlen] = 0;
 
 	/// Set control text
+
 	SetWindowText(g_hVectorDisplayEdit, widestr);
 
 	delete[] widestr;

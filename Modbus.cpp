@@ -66,4 +66,5 @@ bool Modbus::sendCommand(int iDeviceAddress, int iCommandCode, unsigned char* ar
 	size -= 2;
 	response_size = size;
 	return true;
+
 }
