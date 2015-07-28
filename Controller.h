@@ -48,6 +48,21 @@ public:
 	void setTraceCallback(gui_callback cb);
 
 	/**
+	* @brief Enables or disables data saving.
+	* @details Data is saved to "data.dat" file
+	* @param enable - true to enable, false to disable.
+	* @return None.
+	*/
+	void enableDataStorage(bool enable);
+
+	/**
+	* @brief Returns data storage state.
+	* @param None
+	* @return State of data storage.
+	*/
+	bool isStorageEnabled();
+
+	/**
 	* @brief Controller Thread function.
 	* @details Contains thread's loop.
 	* @param None.
@@ -72,6 +87,7 @@ private:
 	gui_callback m_pfGuiCallback;		/*< Pointer to GUI callback function */
 	gui_callback m_pfTraceCallback;		/*< Pointer to GUI console trace callback */
 
+	bool		m_bStoreData;			/*< Flag indicating received data is stored to file*/
 	/**
 	* @brief Does all data processing
 	* @details Computes desired values from input data. 

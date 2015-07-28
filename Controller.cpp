@@ -95,41 +95,56 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 			_bLoopThread = false;
 			break;
 		}
+
 		float boardData[9];
-		unsigned char argument[2] = { 0, 9 };
 		std::string response;
 		unsigned int responseSize = 0;
 		bool dataAcquired = false;
 		int dataToAcquireNum = 9;
+		
+		/// Arguments of command: read 9 bytes from index 0
+		unsigned char argument[2] = { 0, 9 };
+
+		/// Loop till proper data received
 		while (!dataAcquired)
 		{
+			/// Send READ 32BIT DATA command
 			_pThis->m_cModbus->sendCommand(_pThis->m_iDeviceAddress,
 											Modbus::COMMAND_READ_32BIT,
 											argument, 2, response,
 											responseSize);
+			/// If received proper amount of data, convert in to float array
 			if (responseSize == (dataToAcquireNum * sizeof(float)))
 			{
 				for (int i = 0; i < dataToAcquireNum; i++)
 				{
 					memcpy(&(boardData[i]), response.c_str() + i*sizeof(float), sizeof(float));
 				}
+				/// Escape from loop
 				dataAcquired = true;
 
 			}
 			
 		}
 		
-		/// Process data
-		/*
-		std::ofstream dataFile;
-		dataFile.open("data.dat", std::ofstream::app);
-		dataFile << formatString(acceleration, 3, 4) << formatString(ang_rate, 3, 4) << std::endl;
-		dataFile.close();
-		*/
+		if (_pThis->m_bStoreData)
+		{
+			std::ofstream dataFile;
+			dataFile.open("data.dat", std::ofstream::app);
+			dataFile << formatString(boardData, sizeof(boardData)/sizeof(float), 3) << std::endl;
+			dataFile.close();
+		}
+
+
+		/// Do the mathematical processing
 		float result[3];
 		_pThis->processData(boardData, result);
+
+		/// Update GUI values
 		std::string resultString = formatString(result, 3, 3);
 		_pThis->m_pfGuiCallback(resultString);
+
+		/// Move the mouse!
 		INPUT input;
 		ZeroMemory(&input, sizeof(input));
 		input.type = INPUT_MOUSE;
@@ -138,11 +153,22 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 		input.mi.dwFlags = MOUSEEVENTF_MOVE;
 		UINT retval = SendInput(1, &input, sizeof(input));
 
-		//Sleep(200);
 	} /*< End of thread loop*/
 
 	return 0;
 }
+
+void Controller::enableDataStorage(bool enable)
+{
+	m_bStoreData = enable;
+}
+
+bool Controller::isStorageEnabled()
+{
+	return m_bStoreData;
+}
+
+
 
 bool Controller::processData(float* boardData, float* result)
 {

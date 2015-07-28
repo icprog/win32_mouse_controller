@@ -18,6 +18,7 @@ HWND g_hWnd;									/*< Main window handle */
 HWND g_hSendButton;								/*< START button handle */
 HWND g_hStopButton;								/*< STOP button handle */
 HWND g_hSetButton;								/*< SET button handle */
+HWND g_hStoreButton;							/*< STORE button handle*/
 HWND g_hMouseFactorEdit;						/*< Mouse factor edit handle */
 HWND g_hSamplingTimeEdit;						/*< Sampling time edit handle */
 HWND g_hConsoleText;							/*< console view handle */
@@ -163,6 +164,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	   return FALSE;
    }
 
+   /// Create Store Button
+   g_hStoreButton = CreateWindowEx(WS_EX_CLIENTEDGE, _T("BUTTON"),
+	   _T("Enable data storage"), WS_CHILD | WS_VISIBLE | WS_BORDER,
+	   10, 600, 150, 25, g_hWnd, (HMENU)IDM_STOREBUTTON, hInst, NULL);
+   if (!g_hStoreButton)
+   {
+	   return FALSE;
+   }
+
    /// Create Mouse Threshold Edit
    g_hMouseFactorEdit = CreateWindowEx(WS_EX_CLIENTEDGE, _T("EDIT"),
 	   NULL, WS_CHILD | WS_VISIBLE | WS_BORDER,
@@ -217,7 +227,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    }
 
    HWND _hLabelVector = CreateWindowEx(NULL, _T("STATIC"),
-	   _T("Result vector"), WS_CHILD | WS_VISIBLE,
+	   _T("Euler angles:"), WS_CHILD | WS_VISIBLE,
 	   10, 210, 120, 20, g_hWnd, NULL, hInst, NULL);
    if (!_hLabelVector)
    {
@@ -298,6 +308,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDM_STOPBUTTON:
 			g_cController->terminate();
 			EnableWindow(g_hSendButton, true);
+			break;
+		case IDM_STOREBUTTON:
+			if (g_cController->isStorageEnabled())
+			{
+				g_cController->enableDataStorage(false);
+				SetWindowText(g_hStoreButton, __T("Enable data storage"));
+			}
+			else
+			{
+				g_cController->enableDataStorage(true);
+				SetWindowText(g_hStoreButton, __T("Disable data storage"));
+			}
+
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
