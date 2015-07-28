@@ -81,7 +81,7 @@ private:
 	* @param[out] result - result of computation
 	* @return Not implemented.
 	*/
-	bool processData(float* acc, float* angRate, float* magnField, float* result);
+	bool processData(float* boardData, float* result);
 
 	/**
 	* @brief Formats float array to string with desired precision

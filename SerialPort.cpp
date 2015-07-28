@@ -113,6 +113,8 @@ BOOL SerialPort::read(std::string& data, unsigned int& size, unsigned long timeo
 	if (getPortStatus() == false)
 		return false;
 	bool _bContinue = true;
+
+
 	while (_bContinue)
 	{
 		DWORD dwWait = WaitForSingleObject(m_hEventRx, timeout);
