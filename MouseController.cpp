@@ -15,7 +15,7 @@ TCHAR szTitle[MAX_LOADSTRING];					/*< The title bar text */
 TCHAR szWindowClass[MAX_LOADSTRING];			/*< The main window class name */
 
 HWND g_hWnd;									/*< Main window handle */
-HWND g_hSendButton;								/*< START button handle */
+HWND g_hStartButton;							/*< START button handle */
 HWND g_hStopButton;								/*< STOP button handle */
 HWND g_hSetButton;								/*< SET button handle */
 HWND g_hStoreButton;							/*< STORE button handle*/
@@ -147,10 +147,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
    /// Create Start Button
-   g_hSendButton = CreateWindowEx(WS_EX_CLIENTEDGE, _T("BUTTON"),
+   g_hStartButton = CreateWindowEx(WS_EX_CLIENTEDGE, _T("BUTTON"),
 									_T("Start"), WS_CHILD | WS_VISIBLE | WS_BORDER, 
 									10, 10, 70, 50, g_hWnd, (HMENU) IDM_STARTBUTTON, hInst, NULL);
-   if (!g_hSendButton)
+   if (!g_hStartButton)
    {
 	   return FALSE;
    }
@@ -160,6 +160,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	   _T("Stop"), WS_CHILD | WS_VISIBLE | WS_BORDER,
 	   80, 10, 70, 50, g_hWnd, (HMENU)IDM_STOPBUTTON, hInst, NULL);
    if (!g_hStopButton)
+   {
+	   return FALSE;
+   }
+
+   /// Create Set Button
+   g_hSetButton = CreateWindowEx(WS_EX_CLIENTEDGE, _T("BUTTON"),
+	   _T("Set"), WS_CHILD | WS_VISIBLE | WS_BORDER,
+	   210, 130, 70, 50, g_hWnd, (HMENU)IDM_SETBUTTON, hInst, NULL);
+   if (!g_hSetButton)
    {
 	   return FALSE;
    }
@@ -227,7 +236,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    }
 
    HWND _hLabelVector = CreateWindowEx(NULL, _T("STATIC"),
-	   _T("Euler angles:"), WS_CHILD | WS_VISIBLE,
+	   _T("Euler m_pfAngles:"), WS_CHILD | WS_VISIBLE,
 	   10, 210, 120, 20, g_hWnd, NULL, hInst, NULL);
    if (!_hLabelVector)
    {
@@ -303,11 +312,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 		case IDM_STARTBUTTON:
 			g_cController->start();
-			EnableWindow(g_hSendButton, false);
+			EnableWindow(g_hStartButton, false);
 			break;
 		case IDM_STOPBUTTON:
 			g_cController->terminate();
-			EnableWindow(g_hSendButton, true);
+			EnableWindow(g_hStartButton, true);
+			break;
+		case IDM_SETBUTTON:
+
 			break;
 		case IDM_STOREBUTTON:
 			if (g_cController->isStorageEnabled())

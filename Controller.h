@@ -1,6 +1,7 @@
 #pragma once
 #include "SerialPort.h"
 #include "Modbus.h"
+#include "MouseMover.h"
 
 /// Callback function type definition
 typedef bool (*gui_callback)(const std::string& data);
@@ -48,6 +49,14 @@ public:
 	void setTraceCallback(gui_callback cb);
 
 	/**
+	* @brief Sets parameters of MouseMover. To be called from GUI
+	* @param factor Mouse sensivity factor
+	* @param samplingTime Mouse cursor update period
+	* @return None.
+	*/
+	void setMoverParams(int factor = -1, int samplingTime = -1);
+
+	/**
 	* @brief Enables or disables data saving.
 	* @details Data is saved to "data.dat" file
 	* @param enable - true to enable, false to disable.
@@ -69,15 +78,11 @@ public:
 	* @return None.
 	*/
 	static unsigned __stdcall ThreadFn(void* pvParam);
-	/*TODO
-		Napisz funkcjê w¹tku Controller.
-		Otrzymawszy dane, powinna wywo³ywaæ Callback
-		Callback ma byæ zaimplementowany w main'ie i powinien uaktualniaæ GUI
-		*/
 	
 private:
 	SerialPort* m_cSerialPort;		/*< Pointer to SerialPort object used to communicate with device */
 	Modbus*		m_cModbus;			/*< Modbus object to wrap serial port communication */
+	MouseMover  m_cMouseMover;		/*< MouseMover object */
 	int			m_iDeviceAddress;	/*< Modbus address of device */
 
 	HANDLE		m_hThread;				/*< Thread handle */

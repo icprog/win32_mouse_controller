@@ -47,6 +47,9 @@ bool Controller::start()
 	CloseHandle(m_hThreadStart);
 	m_hThreadStart = INVALID_HANDLE_VALUE;
 
+	if (m_cMouseMover.start() == false)
+		return false;
+
 	return true;
 }
 
@@ -61,6 +64,13 @@ bool Controller::terminate()
 	CloseHandle(m_hThreadTerminator);
 	m_hThreadTerminator = INVALID_HANDLE_VALUE;
 	m_hThread = INVALID_HANDLE_VALUE;
+
+	/// Stop also mouse mover thread
+	if (m_cMouseMover.terminate() == false)
+	{
+		return false;
+	}
+
 	return true;
 }
 
@@ -97,13 +107,14 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 		}
 
 		float boardData[9];
+		UINT32 buttonState = 0;
 		std::string response;
 		unsigned int responseSize = 0;
 		bool dataAcquired = false;
-		int dataToAcquireNum = 9;
+		int dataToAcquireNum = 10;
 		
 		/// Arguments of command: read 9 bytes from index 0
-		unsigned char argument[2] = { 0, 9 };
+		unsigned char argument[2] = { 0, dataToAcquireNum };
 
 		/// Loop till proper data received
 		while (!dataAcquired)
@@ -116,9 +127,10 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 			/// If received proper amount of data, convert in to float array
 			if (responseSize == (dataToAcquireNum * sizeof(float)))
 			{
+				memcpy(&buttonState, response.c_str(), sizeof(buttonState));
 				for (int i = 0; i < dataToAcquireNum; i++)
 				{
-					memcpy(&(boardData[i]), response.c_str() + i*sizeof(float), sizeof(float));
+					memcpy(&(boardData[i]), response.c_str() + (i+1)*sizeof(float), sizeof(float));
 				}
 				/// Escape from loop
 				dataAcquired = true;
@@ -127,6 +139,7 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 			
 		}
 		
+		/// Store data for calibration purposes if enabled
 		if (_pThis->m_bStoreData)
 		{
 			std::ofstream dataFile;
@@ -144,18 +157,23 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 		std::string resultString = formatString(result, 3, 3);
 		_pThis->m_pfGuiCallback(resultString);
 
-		/// Move the mouse!
-		INPUT input;
-		ZeroMemory(&input, sizeof(input));
-		input.type = INPUT_MOUSE;
-		input.mi.dx = result[0]*100;
-		input.mi.dy = result[1]*100;
-		input.mi.dwFlags = MOUSEEVENTF_MOVE;
-		UINT retval = SendInput(1, &input, sizeof(input));
+		_pThis->m_cMouseMover.updateAngles(result[0], result[1], buttonState);
 
 	} /*< End of thread loop*/
 
 	return 0;
+}
+
+void Controller::setMoverParams(int factor, int samplingTime)
+{
+	if (factor != -1)
+	{
+		m_cMouseMover.setSensivity(factor);
+	}
+	if (samplingTime != -1)
+	{
+		m_cMouseMover.setInterval(factor);
+	}
 }
 
 void Controller::enableDataStorage(bool enable)

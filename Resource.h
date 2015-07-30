@@ -16,6 +16,7 @@
 #define IDM_STARTBUTTON			(501)
 #define IDM_STOPBUTTON			(502)
 #define IDM_STOREBUTTON			(503)
+#define IDM_SETBUTTON			(504)
 #define IDC_MYICON				2
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
