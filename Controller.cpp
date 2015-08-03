@@ -16,11 +16,14 @@ Controller::Controller(int deviceAddress, Modbus* modbusInstance) :
 											m_pfGuiCallback(NULL),
 											m_pfTraceCallback(NULL)
 {
+	ZeroMemory(m_pfZeroOffset, sizeof(m_pfZeroOffset));
+	InitializeCriticalSection(&m_hLock);
 }
 
 
 Controller::~Controller()
 {
+	DeleteCriticalSection(&m_hLock);
 }
 
 bool Controller::setSerialPort(SerialPort*  sp)
@@ -149,16 +152,21 @@ unsigned __stdcall Controller::ThreadFn(void* pvParam)
 		}
 
 
-		/// Do the mathematical processing
-		float result[3];
-		_pThis->processData(boardData, result);
+		/// Acquire lock to result data array
+		EnterCriticalSection(&(_pThis->m_hLock));
+		/// Do mathematical processing
+		_pThis->processData(boardData, _pThis->m_pfAngles);
+		/// Apply zero offset
+		_pThis->m_pfAngles[0] -= _pThis->m_pfZeroOffset[0];
+		_pThis->m_pfAngles[1] -= _pThis->m_pfZeroOffset[1];
 
 		/// Update GUI values
-		std::string resultString = formatString(result, 3, 3);
+		std::string resultString = formatString(_pThis->m_pfAngles, 3, 3);
 		_pThis->m_pfGuiCallback(resultString);
 
-		_pThis->m_cMouseMover.updateAngles(result[0], result[1], buttonState);
+		_pThis->m_cMouseMover.updateAngles(_pThis->m_pfAngles[0], _pThis->m_pfAngles[1], buttonState);
 
+		LeaveCriticalSection(&(_pThis->m_hLock));
 	} /*< End of thread loop*/
 
 	return 0;
@@ -172,7 +180,7 @@ void Controller::setMoverParams(int factor, int samplingTime)
 	}
 	if (samplingTime != -1)
 	{
-		m_cMouseMover.setInterval(factor);
+		m_cMouseMover.setInterval(samplingTime);
 	}
 }
 
@@ -184,6 +192,15 @@ void Controller::enableDataStorage(bool enable)
 bool Controller::isStorageEnabled()
 {
 	return m_bStoreData;
+}
+
+void Controller::setZero()
+{
+	EnterCriticalSection(&m_hLock);
+
+	memcpy(m_pfZeroOffset, m_pfAngles, sizeof(m_pfAngles));
+
+	LeaveCriticalSection(&m_hLock);
 }
 
 

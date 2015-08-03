@@ -243,6 +243,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	   return FALSE;
    }
 
+  RegisterHotKey(NULL, 1, MOD_ALT | MOD_CONTROL, '0');
 
    /// Window successfully built, now show it
    ShowWindow(g_hWnd, nCmdShow);
@@ -319,8 +320,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			EnableWindow(g_hStartButton, true);
 			break;
 		case IDM_SETBUTTON:
+		{
+			TCHAR factor[10], period[10];
+			GetWindowText(g_hMouseFactorEdit, factor, sizeof(factor));
+			GetWindowText(g_hSamplingTimeEdit, period, sizeof(period));
+			int fac = _tstoi(factor);
+			if (fac > 50 || fac < 1)
+				fac = -1;
+			int tim = _tstoi(period);
+			if (tim > 1000 || tim < 1)
+				tim = -1;
+			g_cController->setMoverParams(fac, tim);
 
-			break;
+		}break;
 		case IDM_STOREBUTTON:
 			if (g_cController->isStorageEnabled())
 			{
@@ -336,6 +348,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
+		break;
+	case WM_HOTKEY:
+		g_cController->setZero();
 		break;
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);

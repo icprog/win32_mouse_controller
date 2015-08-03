@@ -57,6 +57,13 @@ public:
 	void setMoverParams(int factor = -1, int samplingTime = -1);
 
 	/**
+	* @brief Sets current measure as zero offset
+	* @param None
+	* @return None.
+	*/
+	void setZero();
+
+	/**
 	* @brief Enables or disables data saving.
 	* @details Data is saved to "data.dat" file
 	* @param enable - true to enable, false to disable.
@@ -89,10 +96,15 @@ private:
 	HANDLE		m_hThreadTerminator;	/*< Thread terminator event handle */
 	HANDLE		m_hThreadStart;			/*< Thread start event handle */
 
+	CRITICAL_SECTION	m_hLock;		/*< Critical section lock*/
+
 	gui_callback m_pfGuiCallback;		/*< Pointer to GUI callback function */
 	gui_callback m_pfTraceCallback;		/*< Pointer to GUI console trace callback */
 
 	bool		m_bStoreData;			/*< Flag indicating received data is stored to file*/
+	
+	float		m_pfAngles[3];			/*< Array of Euler angles */
+	float		m_pfZeroOffset[3];		/*< Array of zero offset*/
 	/**
 	* @brief Does all data processing
 	* @details Computes desired values from input data. 
