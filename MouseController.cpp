@@ -139,9 +139,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    hInst = hInstance; // Store instance handle in our global variable
 
-   g_hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
-
+   g_hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW | WS_SYSMENU,
+      CW_USEDEFAULT, 0, 340,700, NULL, NULL, hInstance, NULL);
+   SetMenu(g_hWnd, NULL);
    if (!g_hWnd)
    {
       return FALSE;
@@ -212,7 +212,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    /// Create Result Vector text edit
    g_hVectorDisplayEdit = CreateWindowEx(WS_EX_CLIENTEDGE, _T("EDIT"),
 	   NULL, WS_CHILD | WS_VISIBLE | WS_BORDER,
-	   130, 210, 200, 20, g_hWnd, NULL, hInst, NULL);
+	   130, 210, 180, 20, g_hWnd, NULL, hInst, NULL);
    if (!g_hVectorDisplayEdit)
    {
 	   return FALSE;
@@ -236,14 +236,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    }
 
    HWND _hLabelVector = CreateWindowEx(NULL, _T("STATIC"),
-	   _T("Euler m_pfAngles:"), WS_CHILD | WS_VISIBLE,
+	   _T("Euler angles:"), WS_CHILD | WS_VISIBLE,
 	   10, 210, 120, 20, g_hWnd, NULL, hInst, NULL);
    if (!_hLabelVector)
    {
 	   return FALSE;
    }
 
-  RegisterHotKey(NULL, 1, MOD_ALT | MOD_CONTROL, '0');
+  RegisterHotKey(g_hWnd, 1, MOD_ALT | MOD_NOREPEAT, '0');
 
    /// Window successfully built, now show it
    ShowWindow(g_hWnd, nCmdShow);
